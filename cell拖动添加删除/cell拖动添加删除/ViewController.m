@@ -9,7 +9,6 @@
 #import "ViewController.h"
 #import "AppCollectionViewCell.h"
 
-#define RGB(r,g,b) [UIColor colorWithRed:r/255.0 green:g/255.0 blue:b/255.0 alpha:1.0]
 
 static NSString *identifier = @"AppsCell";
 
@@ -82,6 +81,7 @@ static CGFloat leftMargin = 5;
     // 如果使用storyboard来加载cell就不要在注册了，否则会调用initWithFrame方法，重新加载一遍
     [_collectionView registerClass:[AppCollectionViewCell class] forCellWithReuseIdentifier:identifier];
     
+    // 在storyboard中已设置过dataSource和delegate
     //_collectionView.dataSource = self;
     _collectionView.contentInset = UIEdgeInsetsMake(leftMargin, leftMargin, 0, leftMargin);
    
@@ -99,25 +99,13 @@ static CGFloat leftMargin = 5;
     self.navigationItem.leftBarButtonItem = lefItem;
 }
 
-//
-- (UIButton *)setupBarButtonItem:(NSString *)title {
-    
-    UIButton *button = [UIButton buttonWithType:UIButtonTypeCustom];
-    button.frame = CGRectMake(0, 0, 50, 30);
-    [button setBackgroundColor:[UIColor clearColor]];
-    [button setTitle:title forState:UIControlStateNormal];
-    [button setTitleColor:[UIColor redColor] forState:UIControlStateNormal];
-    button.titleLabel.font = [UIFont systemFontOfSize:16];
 
-    return button;
-}
-
-
-// 长按应用进入编辑状态，可以进行移动删除操作
+#pragma mark - 长按cell进入编辑状态，可以进行移动删除操作
 - (void)longPressMoving:(UILongPressGestureRecognizer *)longPress {
     switch (longPress.state) {
         case UIGestureRecognizerStateBegan:
         {
+            //获取当前手指长按的cell的indexPath
             _originalIndexPath = [_collectionView indexPathForItemAtPoint:[longPress locationInView:_collectionView]];
             if (_originalIndexPath.row > _viewModels.count) {
                 return;
@@ -129,15 +117,17 @@ static CGFloat leftMargin = 5;
             
             //获取到手指所在cell
             AppCollectionViewCell *cell = (AppCollectionViewCell *)[_collectionView cellForItemAtIndexPath:_originalIndexPath];
-            UIImage *image = cell.appImageView.image;
-            NSString *name = cell.nameLabel.text;
-            //
-            UIView *view1 = [self viewFromCell:cell image:image andName:name];
-            UIImage *image1 = [self imageFromView:view1];
-            UIImageView *snapView = [[UIImageView alloc] initWithImage:image1];
+            
+            //生成一个和cell一样的view
+            UIView *cellView = [self viewFromCell:cell];
+            // 生成cellView一样的image
+            UIImage *cellImage = [self imageFromView:cellView];
+            UIImageView *snapView = [[UIImageView alloc] initWithImage:cellImage];
+            // 临时cell
             _tempMoveCell = snapView;
             _tempMoveCell.frame = cell.frame;
             
+            // 当前的真实cell隐藏,表面上显示的临时的cell
             cell.hidden = YES;
             [_collectionView addSubview:_tempMoveCell];
             
@@ -151,6 +141,7 @@ static CGFloat leftMargin = 5;
             CGFloat tranY = [longPress locationOfTouch:0 inView:longPress.view].y - _lastPoint.y;
             _tempMoveCell.center = CGPointApplyAffineTransform(_tempMoveCell.center, CGAffineTransformMakeTranslation(tranX, tranY));
             _lastPoint = [longPress locationOfTouch:0 inView:longPress.view];
+            // 移动cell
             [self moveCell];
 
         }
@@ -257,20 +248,34 @@ static CGFloat leftMargin = 5;
 }
 
 
-- (UIView *)viewFromCell:(AppCollectionViewCell *)cell image:(UIImage *)image andName:(NSString *)name{
+#pragma mark - 生成左右button
+- (UIButton *)setupBarButtonItem:(NSString *)title {
+    
+    UIButton *button = [UIButton buttonWithType:UIButtonTypeCustom];
+    button.frame = CGRectMake(0, 0, 50, 30);
+    [button setBackgroundColor:[UIColor clearColor]];
+    [button setTitle:title forState:UIControlStateNormal];
+    [button setTitleColor:[UIColor redColor] forState:UIControlStateNormal];
+    button.titleLabel.font = [UIFont systemFontOfSize:16];
+    
+    return button;
+}
+
+#pragma mark - 生成一个和当前cell一样的view
+- (UIView *)viewFromCell:(AppCollectionViewCell *)cell {
     
     UIView *view = [[UIView alloc] initWithFrame:cell.frame];
     view.backgroundColor = RGB(230, 230, 230);
     
     UIImageView *appImageView = [[UIImageView alloc] initWithFrame:CGRectMake(0, 0, cell.frame.size.width/3, cell.frame.size.width/3)];
-    appImageView.image = image;
+    appImageView.image = cell.appImageView.image;
     appImageView.center = CGPointMake(cell.frame.size.width / 2.0, cell.frame.size.height / 2.0 - 10);
     [view addSubview:appImageView];
     
     UILabel *nameLabel = [[UILabel alloc] initWithFrame:CGRectMake(0, 0, cell.frame.size.width, 20)];
     nameLabel.backgroundColor = [UIColor clearColor];
     nameLabel.font = [UIFont boldSystemFontOfSize:12.0];
-    nameLabel.text = name;
+    nameLabel.text = cell.nameLabel.text;
     nameLabel.textAlignment = NSTextAlignmentCenter;
     nameLabel.textColor = RGB(55, 55, 55);
     nameLabel.center = CGPointMake(cell.frame.size.width / 2.0, appImageView.frame.origin.y + appImageView.frame.size.height + nameLabel.frame.size.height / 2.0 + 3);
@@ -287,6 +292,7 @@ static CGFloat leftMargin = 5;
     return view;
 }
 
+#pragma mark - 根据生成的临时View转成image
 - (UIImage *)imageFromView:(UIView *)snapView {
     UIGraphicsBeginImageContext(snapView.frame.size);
     CGContextRef contextRef = UIGraphicsGetCurrentContext();
@@ -298,7 +304,6 @@ static CGFloat leftMargin = 5;
 
 
 #pragma mark -  UICollectionViewDataSource
-//
 - (NSInteger)collectionView:(UICollectionView *)collectionView numberOfItemsInSection:(NSInteger)section{
     
     return _viewModels.count;
@@ -321,7 +326,7 @@ static CGFloat leftMargin = 5;
     return cell;
 }
 
-#pragma mark - 按钮点击时间监听
+#pragma mark - 按钮点击事件监听
 // 点击删除按钮，删除应用
 - (void)deleteButtonPressed:(id)sender{
     AppCollectionViewCell *cell = (AppCollectionViewCell *)[sender superview].superview;
