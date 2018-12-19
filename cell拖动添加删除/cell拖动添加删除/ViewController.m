@@ -239,9 +239,8 @@ static CGFloat leftMargin = 5;
     isEditing = YES;
     rightButton.hidden = NO;
     _longPress.minimumPressDuration = 0.5;
-    for (int i = 0; i < _viewModels.count; i++) {
-        NSIndexPath *indexpath = [NSIndexPath indexPathForRow:i inSection:0];
-        AppCollectionViewCell *cell = (AppCollectionViewCell *)[_collectionView cellForItemAtIndexPath:indexpath];
+    
+    for (AppCollectionViewCell *cell in [self.collectionView visibleCells]) {
         cell.deleteBtn.hidden = NO;
     }
     
@@ -251,9 +250,8 @@ static CGFloat leftMargin = 5;
     isEditing = NO;
     _longPress.minimumPressDuration = 1.0;
     rightButton.hidden = YES;
-    for (int i = 0; i < _viewModels.count; i++) {
-        NSIndexPath *indexpath = [NSIndexPath indexPathForRow:i inSection:0];
-        AppCollectionViewCell *cell = (AppCollectionViewCell *)[_collectionView cellForItemAtIndexPath:indexpath];
+    
+    for (AppCollectionViewCell *cell in [self.collectionView visibleCells]) {
         cell.deleteBtn.hidden = YES;
     }
 }
