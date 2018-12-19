@@ -118,7 +118,7 @@ static CGFloat leftMargin = 5;
             //获取到手指所在cell
             AppCollectionViewCell *cell = (AppCollectionViewCell *)[_collectionView cellForItemAtIndexPath:_originalIndexPath];
             
-            //生成一个和cell一样的view
+            //生成一个和cell一样的view，类似于生成快照
             UIView *cellView = [self viewFromCell:cell];
             // 生成cellView一样的image
             UIImage *cellImage = [self imageFromView:cellView];
@@ -137,8 +137,19 @@ static CGFloat leftMargin = 5;
             break;
         case UIGestureRecognizerStateChanged:
         {
+            // 当前cell移动的相对距离
             CGFloat tranX = [longPress locationOfTouch:0 inView:longPress.view].x - _lastPoint.x;
             CGFloat tranY = [longPress locationOfTouch:0 inView:longPress.view].y - _lastPoint.y;
+            /*
+             函数说明：某点通过矩阵变换之后的点
+              CGPoint CGPointApplyAffineTransform(CGPoint point, CGAffineTransform t)
+             point:某点
+             t:变换矩阵
+             
+             相对平移函数：(相对的是屏幕的左上角(0,0)点)
+             CGAffineTransformMakeTranslation(CGFloat tx,CGFloat ty)
+             */
+            
             _tempMoveCell.center = CGPointApplyAffineTransform(_tempMoveCell.center, CGAffineTransformMakeTranslation(tranX, tranY));
             _lastPoint = [longPress locationOfTouch:0 inView:longPress.view];
             // 移动cell
@@ -210,11 +221,11 @@ static CGFloat leftMargin = 5;
     NSMutableArray *temp = @[].mutableCopy;
     [temp addObjectsFromArray:_viewModels];
     if (_moveIndexPath.item > _originalIndexPath.item) {
-        for (NSUInteger i = _originalIndexPath.item; i < _moveIndexPath.item ; i ++) {
+        for (NSUInteger i = _originalIndexPath.item; i < _moveIndexPath.item ; i++) {
             [temp exchangeObjectAtIndex:i withObjectAtIndex:i + 1];
         }
     }else{
-        for (NSUInteger i = _originalIndexPath.item; i > _moveIndexPath.item ; i --) {
+        for (NSUInteger i = _originalIndexPath.item; i > _moveIndexPath.item ; i--) {
             [temp exchangeObjectAtIndex:i withObjectAtIndex:i - 1];
         }
     }
